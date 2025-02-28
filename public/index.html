@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xQuizit - Interactive Quiz Platform</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="watermark">Created by Qais and PKD</div>
+    <div class="container">
+        <header>
+            <div class="brand">
+                <div class="logo">
+                    <svg width="40" height="40" viewBox="0 0 40 40">
+                        <path d="M20 0C8.954 0 0 8.954 0 20s8.954 20 20 20 20-8.954 20-20S31.046 0 20 0zm0 36c-8.837 0-16-7.163-16-16S11.163 4 20 4s16 7.163 16 16-7.163 16-16 16z" fill="#007bff"/>
+                        <path d="M28 12L16 24l-4-4" stroke="#007bff" stroke-width="4" fill="none"/>
+                        <circle cx="20" cy="20" r="6" fill="#007bff"/>
+                    </svg>
+                </div>
+                <h1>xQuizIt</h1>
+            </div>
+            <nav>
+                <button onclick="showQuizzes()">All Quizzes</button>
+                <button onclick="showQuizForm()">Create Quiz</button>
+                <a href="/join.html" target="_blank" class="button">Join Quiz</a>
+            </nav>
+        </header>
+
+        <!-- Quiz List Section -->
+        <div id="quizList" class="section">
+            <div class="quiz-filters">
+                <div class="search-bar">
+                    <input type="text" id="searchInput" placeholder="Search quizzes...">
+                </div>
+            </div>
+            <div id="quizzesContainer"></div>
+        </div>
+
+        <!-- Create Quiz Form -->
+        <div id="quizForm" class="section" style="display: none;">
+            <h2>Create New Quiz</h2>
+            <form id="createQuizForm">
+                <div class="form-group">
+                    <label>Title:</label>
+                    <input type="text" id="quizTitle" required>
+                </div>
+                <div class="form-group">
+                    <label>Description:</label>
+                    <textarea id="quizDescription" required></textarea>
+                </div>
+                <div class="form-group theme-settings">
+                    <h3>Theme Settings</h3>
+                    <div class="color-pickers">
+                        <div>
+                            <label>Background Color:</label>
+                            <input type="color" id="backgroundColor" value="#ffffff">
+                        </div>
+                        <div>
+                            <label>Text Color:</label>
+                            <input type="color" id="textColor" value="#333333">
+                        </div>
+                        <div>
+                            <label>Accent Color:</label>
+                            <input type="color" id="accentColor" value="#007bff">
+                        </div>
+                    </div>
+                </div>
+                <div id="questionsContainer"></div>
+                <button type="button" onclick="addQuestion()">Add Question</button>
+                <button type="submit">Create Quiz</button>
+            </form>
+        </div>
+
+        <!-- Live Quiz Control Section -->
+        <div id="liveQuizControl" class="section" style="display: none;">
+            <h2>Live Quiz Control</h2>
+            <div id="sessionInfo">
+                <h3>Session Code: <span id="sessionCode"></span></h3>
+                <p>Share this code with participants to join at: <a href="/join.html" target="_blank">/join.html</a></p>
+                <div id="qrCode"></div>
+            </div>
+            <div id="participantCount">
+                <h3>Participants: <span id="participantNumber">0</span></h3>
+                <div id="participantNames" class="participant-names"></div>
+            </div>
+            <div id="questionControl">
+                <h3>Question Progress: <span id="currentQuestionNumber">-</span>/<span id="totalQuestions">-</span></h3>
+                <div id="questionDisplay" class="question-display"></div>
+                <button onclick="nextQuestion()" id="nextQuestionBtn">Start Quiz</button>
+            </div>
+            <div id="liveLeaderboard">
+                <h3>Leaderboard</h3>
+                <div id="liveLeaderboardList"></div>
+            </div>
+            <div class="report-controls">
+                <button onclick="downloadReport()" id="downloadReportBtn" style="display: none;">Download Report</button>
+                <button onclick="endQuiz()" id="endQuizBtn" style="display: none;">End Quiz</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Winners Announcement Modal -->
+    <div id="winnersModal" class="modal">
+        <div class="modal-content winners-content">
+            <div class="winners-announcement">
+                <h2>Quiz Champions!</h2>
+                <p id="totalParticipants"></p>
+                <div class="winners-podium">
+                    <div class="winner" id="secondPlace">
+                        <div class="trophy silver">🥈</div>
+                        <h3>2nd Place</h3>
+                        <p class="winner-name"></p>
+                        <p class="winner-score"></p>
+                        <p class="winner-rank"></p>
+                    </div>
+                    <div class="winner" id="firstPlace">
+                        <div class="trophy gold">🏆</div>
+                        <h3>1st Place</h3>
+                        <p class="winner-name"></p>
+                        <p class="winner-score"></p>
+                        <p class="winner-rank"></p>
+                    </div>
+                    <div class="winner" id="thirdPlace">
+                        <div class="trophy bronze">🥉</div>
+                        <h3>3rd Place</h3>
+                        <p class="winner-name"></p>
+                        <p class="winner-score"></p>
+                        <p class="winner-rank"></p>
+                    </div>
+                </div>
+                <div id="fullLeaderboard"></div>
+                <div class="winners-actions">
+                    <button onclick="downloadReport()" class="download-report">Download Results</button>
+                    <button onclick="closeWinnersModal()" class="close-winners">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quiz Preview Modal -->
+    <div id="quizPreviewModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeQuizPreview()">&times;</span>
+            <div class="quiz-preview">
+                <div class="quiz-preview-header">
+                    <h2 id="previewTitle"></h2>
+                    <div class="quiz-meta">
+                        <span id="previewQuestionCount"></span>
+                    </div>
+                    <p id="previewDescription"></p>
+                </div>
+                <div class="quiz-questions" id="previewQuestions"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
+    <script>
+        // Fetch Cognito Configuration
+        let poolData = {};
+        let cognitoDomain = '';
+        let redirectUri = window.location.origin;
+
+        async function fetchCognitoConfig() {
+            try {
+                const response = await fetch('/api/config/cognito');
+                const config = await response.json();
+                poolData = {
+                    UserPoolId: config.UserPoolId,
+                    ClientId: config.ClientId
+                };
+                cognitoDomain = `https://${config.UserPoolId.split('_')[0]}.auth.${config.Region}.amazoncognito.com`;
+                console.log('Cognito configuration loaded:', { poolData, cognitoDomain });
+            } catch (error) {
+                console.error('Error fetching Cognito configuration:', error);
+            }
+        }
+
+        // Add welcome message element
+        const welcomeDiv = document.createElement('div');
+        welcomeDiv.id = 'welcomeMessage';
+        welcomeDiv.style.position = 'fixed';
+        welcomeDiv.style.top = '10px';
+        welcomeDiv.style.left = '10px';
+        welcomeDiv.style.padding = '5px 10px';
+        welcomeDiv.style.borderRadius = '5px';
+        welcomeDiv.style.backgroundColor = '#4CAF50';
+        welcomeDiv.style.color = 'white';
+        welcomeDiv.style.zIndex = '1000';
+        document.body.appendChild(welcomeDiv);
+
+        // Generate a random state parameter for security
+        const generateState = () => {
+            const array = new Uint32Array(2);
+            window.crypto.getRandomValues(array);
+            return Array.from(array, dec => ('0' + dec.toString(16)).substr(-2)).join('');
+        };
+
+        // Function to display welcome message
+        function displayWelcomeMessage(idToken) {
+            try {
+                const decodedToken = jwt_decode(idToken);
+                const username = decodedToken['cognito:username'] || decodedToken.email || 'User';
+                welcomeDiv.textContent = `Welcome, ${username}!`;
+            } catch (error) {
+                console.error('Error decoding token:', error);
+                welcomeDiv.textContent = 'Welcome!';
+            }
+        }
+
+        // Check if user is authenticated
+        async function checkAuth() {
+            try {
+                // Check for error in URL
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('error')) {
+                    const error = urlParams.get('error');
+                    const errorDescription = urlParams.get('error_description');
+                    console.error('Authentication error:', error);
+                    console.error('Error description:', errorDescription);
+                    alert(`Authentication failed: ${errorDescription}`);
+                    return;
+                }
+
+                // Log authentication attempt details
+                console.log('Starting authentication check');
+                console.log('Current URL:', window.location.href);
+                console.log('Cognito Domain:', cognitoDomain);
+                console.log('Client ID:', poolData.ClientId);
+                console.log('Redirect URI:', redirectUri);
+
+                // If no token, redirect to login using OAuth2 endpoint
+                const state = generateState();
+                sessionStorage.setItem('oauth_state', state);
+                
+                const loginUrl = `${cognitoDomain}/login?` +
+                    `client_id=${poolData.ClientId}` +
+                    `&response_type=code` +
+                    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+                    `&scope=email+openid+phone` +
+                    `&state=${state}`;
+
+                console.log('Redirecting to:', loginUrl);
+                window.location.href = loginUrl;
+            } catch (error) {
+                console.error('Error in checkAuth:', error);
+                alert('Failed to initialize authentication. Check console for details.');
+            }
+        }
+
+        // Handle the authorization code callback from Cognito
+        async function handleCallback() {
+            try {
+                console.log('Handling authentication callback');
+                
+                // Check for authorization code in URL parameters
+                const urlParams = new URLSearchParams(window.location.search);
+                const code = urlParams.get('code');
+                const state = urlParams.get('state');
+                
+                console.log('Callback parameters present:', {
+                    code: !!code,
+                    state: !!state
+                });
+
+                if (!code) {
+                    console.error('No authorization code found in callback');
+                    alert('Authentication failed: No authorization code received');
+                    return;
+                }
+
+                // Verify state parameter
+                const storedState = sessionStorage.getItem('oauth_state');
+                if (!state || !storedState || state !== storedState) {
+                    console.error('State mismatch', {
+                        statePresent: !!state,
+                        storedStatePresent: !!storedState,
+                        matching: state === storedState
+                    });
+                    alert('Authentication failed: Invalid state parameter');
+                    return;
+                }
+
+                // Exchange authorization code for tokens
+                console.log('Exchanging authorization code for tokens');
+                console.log('Code:', code);
+                console.log('Redirect URI:', redirectUri);
+
+                // Get client secret from config
+                const config = await fetch('/api/config/cognito').then(res => res.json());
+                const clientSecret = config.ClientSecret;
+                
+                if (!clientSecret) {
+                    throw new Error('Client secret not available');
+                }
+
+                const params = new URLSearchParams();
+                params.append('grant_type', 'authorization_code');
+                params.append('client_id', poolData.ClientId);
+                params.append('client_secret', clientSecret);
+                params.append('code', code);
+                params.append('redirect_uri', redirectUri);
+
+                // Log the request details
+                const tokenUrl = `${cognitoDomain}/oauth2/token`;
+                console.log('Token request URL:', tokenUrl);
+                console.log('Token request params:', Object.fromEntries(params.entries()));
+
+                const tokenResponse = await fetch(tokenUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Accept': 'application/json',
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    },
+                    body: params
+                });
+
+                if (!tokenResponse.ok) {
+                    const responseText = await tokenResponse.text();
+                    console.error('Token exchange failed. Status:', tokenResponse.status);
+                    console.error('Response:', responseText);
+                    try {
+                        const error = JSON.parse(responseText);
+                        console.error('Parsed error:', error);
+                    } catch (e) {
+                        console.error('Could not parse error response');
+                    }
+                    alert('Failed to complete authentication. Please try again.');
+                    return;
+                }
+
+                const tokens = await tokenResponse.json();
+                console.log('Received tokens:', {
+                    idToken: !!tokens.id_token,
+                    accessToken: !!tokens.access_token
+                });
+
+                // Store tokens
+                localStorage.setItem('id_token', tokens.id_token);
+                localStorage.setItem('access_token', tokens.access_token);
+                
+                // Display welcome message with username
+                displayWelcomeMessage(tokens.id_token);
+                
+                // Clean up
+                sessionStorage.removeItem('oauth_state');
+
+                // Redirect to clean URL and reload
+                window.location.href = redirectUri;
+            } catch (error) {
+                console.error('Error handling callback:', error);
+                alert('Failed to process authentication response. Check console for details.');
+            }
+        }
+
+        // Initialize authentication
+        window.addEventListener('load', async function() {
+            try {
+                console.log('Initializing authentication');
+                
+                // First fetch Cognito configuration
+                await fetchCognitoConfig();
+                
+                // Check if we're handling a callback
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('code') || urlParams.has('error')) {
+                    console.log('Found authorization code or error in URL');
+                    handleCallback();
+                    return;
+                }
+                
+                // Check if we need to authenticate
+                const token = localStorage.getItem('id_token');
+                if (!token) {
+                    console.log('No authentication token found, starting auth flow');
+                    checkAuth();
+                } else {
+                    console.log('Found existing authentication token');
+                    // Display welcome message for existing token
+                    displayWelcomeMessage(token);
+                }
+            } catch (error) {
+                console.error('Error during authentication initialization:', error);
+                alert('Failed to initialize authentication. Please try refreshing the page.');
+            }
+        });
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>
